@@ -17,6 +17,8 @@ module lcd_ini (
     reg lcd_rs_in;
     reg lcd_start;
     wire lcd_done;
+	 reg [15:0] num;
+	 reg sinal=0;
 
     // Instância do driver (NÃO ALTERAR SEU DRIVER)
     lcd_controller u_lcd_driver (
@@ -39,6 +41,7 @@ module lcd_ini (
 
     // Variáveis auxiliares
     integer i;
+	 integer j;
 
     // Comandos LCD HD44780
     localparam CMD_INIT_FUNC = 8'h38;
@@ -49,13 +52,19 @@ module lcd_ini (
     localparam CMD_HOME      = 8'h02;
 
     // --- FUNÇÃO PARA HEXADECIMAL (Rápida e Leve) ---
-    function [7:0] to_hex(input [3:0] val);
+	 /*
+    function [7:0] to_decimal(input [15:0] val);
         begin
-            if (val < 10) to_hex = 8'h30 + val;       // 0-9
-            else          to_hex = 8'h41 + (val - 10); // A-F
+            
+            for(j=0;j<16;j=j+1)begin
+				
+					if(1<<j & val[j]) num=num+1<<j;
+				
+				end
+				
         end
     endfunction
-
+*/
     // --- MÁQUINA DE ESTADOS PRINCIPAL ---
     always @(posedge clk or posedge reset) begin
         if (reset) begin
@@ -142,12 +151,24 @@ module lcd_ini (
                          // Se for Clear
                          mensagem[16]="O"; mensagem[17]="K"; 
                     end else begin
-                         // Converte 16 bits para 4 caracteres Hex
-                         mensagem[27] = to_hex(reg_value_in[15:12]);
-                         mensagem[28] = to_hex(reg_value_in[11:8]);
-                         mensagem[29] = to_hex(reg_value_in[7:4]);
-                         mensagem[30] = to_hex(reg_value_in[3:0]);
-                         mensagem[31] = "h"; // Sufixo Hex
+								
+								sinal = reg_value_in[15];
+								if (sinal) begin
+								  num = (~reg_value_in) + 1; // Transforma -1 (FFFF) em 1 (0001)
+								 end else begin
+									  num = reg_value_in;
+								 end
+                         // Converte 16 bits para 4 caracteres decimal
+                         mensagem[31] = (num%10) + "0";
+								 num=num/10;
+                         mensagem[30] = (num%10) + "0";
+								 num=num/10;
+                         mensagem[29] = (num%10) + "0";
+								 num=num/10;
+                         mensagem[28] = (num%10) + "0";
+								 num=num/10;
+                         mensagem[27] = (num%10) + "0";
+								 mensagem[26] = sinal?"-":"+";
                     end
                     
                     // Vai resetar cursor para inicio

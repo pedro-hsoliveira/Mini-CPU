@@ -1,1 +1,1 @@
-Warning (10268): Verilog HDL information at lcd_ini.v(60): always construct contains both blocking and non-blocking assignments File: D:/Users/phso/Documents/Mini-CPU/lcd_ini.v Line: 60
+Warning (10268): Verilog HDL information at lcd_ini.v(69): always construct contains both blocking and non-blocking assignments File: D:/Users/phso/Documents/Mini-CPU/lcd_ini.v Line: 69
