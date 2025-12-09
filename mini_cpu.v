@@ -78,8 +78,8 @@ module mini_cpu (
     lcd_ini meu_lcd (
         .clk(clock),
         .reset(~reset), 
-        .opcode_in(lcd_opcode_reg), 
-        .reg_index_in(lcd_dest_reg),
+        .opcode_in(opcode), 
+        .reg_index_in(dest),
         .reg_value_in(lcd_value_reg),
         .update_in(lcd_update_signal), 
         .LCD_DATA(LCD_DATA),
