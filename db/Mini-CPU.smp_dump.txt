@@ -1,0 +1,26 @@
+
+State Machine - |mini_cpu|lcd_ini:meu_lcd|state
+Name state.01110 state.01101 state.01100 state.01011 state.01010 state.01001 state.01000 state.00111 state.00110 state.00101 state.00100 state.00011 state.00010 state.00001 state.00000 
+state.00000 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+state.00001 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 
+state.00010 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 
+state.00011 0 0 0 0 0 0 0 0 0 0 0 1 0 0 1 
+state.00100 0 0 0 0 0 0 0 0 0 0 1 0 0 0 1 
+state.00101 0 0 0 0 0 0 0 0 0 1 0 0 0 0 1 
+state.00110 0 0 0 0 0 0 0 0 1 0 0 0 0 0 1 
+state.00111 0 0 0 0 0 0 0 1 0 0 0 0 0 0 1 
+state.01000 0 0 0 0 0 0 1 0 0 0 0 0 0 0 1 
+state.01001 0 0 0 0 0 1 0 0 0 0 0 0 0 0 1 
+state.01010 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 
+state.01011 0 0 0 1 0 0 0 0 0 0 0 0 0 0 1 
+state.01100 0 0 1 0 0 0 0 0 0 0 0 0 0 0 1 
+state.01101 0 1 0 0 0 0 0 0 0 0 0 0 0 0 1 
+state.01110 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 
+
+State Machine - |mini_cpu|lcd_ini:meu_lcd|lcd_controller:u_lcd_driver|estado
+Name estado.PULSE_LO estado.PULSE_HI estado.SETUP estado.IDLE estado.WAIT_HOLD 
+estado.IDLE 0 0 0 0 0 
+estado.SETUP 0 0 1 1 0 
+estado.PULSE_HI 0 1 0 1 0 
+estado.PULSE_LO 1 0 0 1 0 
+estado.WAIT_HOLD 0 0 0 1 1 

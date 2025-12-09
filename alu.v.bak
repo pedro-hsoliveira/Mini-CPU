@@ -17,8 +17,6 @@ module alu (
             3'b001: result = A + B;    // ADD/ADDI
             3'b011: result = A - B;    // SUB/SUBI
             3'b101: result = A * B;    // MUL
-				
-				
             default: result = 16'd0;
         endcase
     end

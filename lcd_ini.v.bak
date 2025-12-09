@@ -1,0 +1,127 @@
+module lcd_ini (
+    input clk,
+    input reset,
+    
+    // Interface física (Sai daqui para os pinos)
+    output [7:0] LCD_DATA,
+    output LCD_RS, LCD_RW, LCD_EN, LCD_ON, LCD_BLON,
+    
+    // Interface de Debug (Para sabermos o que está acontecendo)
+    output reg inicializado
+);
+
+    // Sinais para controlar o lcd_controller
+    reg [7:0] lcd_data_in;
+    reg lcd_rs_in;
+    reg lcd_start;
+    wire lcd_done;
+
+    // Instância do Controlador de Baixo Nível
+    lcd_controller u_lcd_driver (
+        .clk(clk),
+        .reset(reset),
+        .data_in(lcd_data_in),
+        .rs_in(lcd_rs_in),
+        .start(lcd_start),
+        .done(lcd_done),
+        .LCD_DATA(LCD_DATA),
+        .LCD_RS(LCD_RS),
+        .LCD_RW(LCD_RW),
+        .LCD_EN(LCD_EN),
+        .LCD_ON(LCD_ON),
+        .LCD_BLON(LCD_BLON)
+    );
+
+    // Máquina de Estados da Inicialização
+    reg [3:0] state;
+    reg [19:0] delay_boot; // Delay inicial de power-on (15ms+)
+
+    // Comandos do Datasheet HD44780
+    localparam CMD_FUNCTION_SET = 8'h38; // 8-bit, 2 lines, 5x7 font
+    localparam CMD_DISPLAY_ON   = 8'h0C; // Display ON, Cursor OFF
+    localparam CMD_CLEAR        = 8'h01; // Limpa tela
+    localparam CMD_ENTRY_MODE   = 8'h06; // Incrementa cursor, sem shift
+
+    always @(posedge clk or posedge reset) begin
+        if (reset) begin
+            state <= 0;
+            lcd_start <= 0;
+            inicializado <= 0;
+            delay_boot <= 0;
+        end else begin
+            case (state)
+                0: begin // Espera Power-On (>15ms)
+                    if (delay_boot < 20'd800_000) begin // ~16ms
+                        delay_boot <= delay_boot + 1'b1;
+                    end else begin
+                        state <= 1;
+                    end
+                end
+
+                1: begin // Passo 1: Function Set
+                    lcd_data_in <= CMD_FUNCTION_SET;
+                    lcd_rs_in   <= 0; // Comando
+                    lcd_start   <= 1;
+                    state       <= 2;
+                end
+                
+                2: begin // Espera terminar Passo 1
+                    if (lcd_start) lcd_start <= 0; // Baixa o start
+                    if (lcd_done) state <= 3;      // Se terminou, próximo
+                end
+
+                3: begin // Passo 2: Display ON
+                    lcd_data_in <= CMD_DISPLAY_ON;
+                    lcd_rs_in   <= 0;
+                    lcd_start   <= 1;
+                    state       <= 4;
+                end
+
+                4: begin // Espera terminar Passo 2
+                    if (lcd_start) lcd_start <= 0;
+                    if (lcd_done) state <= 5;
+                end
+
+                5: begin // Passo 3: Clear Display
+                    lcd_data_in <= CMD_CLEAR;
+                    lcd_rs_in   <= 0;
+                    lcd_start   <= 1;
+                    state       <= 6;
+                end
+
+                6: begin // Espera terminar Passo 3
+                    if (lcd_start) lcd_start <= 0;
+                    if (lcd_done) state <= 7;
+                end
+
+                7: begin // Passo 4: Entry Mode Set
+                    lcd_data_in <= CMD_ENTRY_MODE;
+                    lcd_rs_in   <= 0;
+                    lcd_start   <= 1;
+                    state       <= 8;
+                end
+
+                8: begin // Espera terminar Passo 4
+                    if (lcd_start) lcd_start <= 0;
+                    if (lcd_done) begin
+                        state <= 9;
+                        inicializado <= 1; // PRONTO! LCD configurado.
+                    end
+                end
+
+                9: begin
+                    // AQUI É ONDE VOCÊ VAI ESCREVER SEU TEXTO DEPOIS!
+                    // Por enquanto, vamos escrever a letra 'A' só para testar
+                    if (inicializado) begin
+                         // Exemplo: Escrever 'A'
+                         // lcd_data_in <= "A"; 
+                         // lcd_rs_in <= 1; // Dado
+                         // lcd_start <= 1;
+                         // ... lógica para segurar e não repetir infinitamente
+                    end
+                end
+            endcase
+        end
+    end
+
+endmodule

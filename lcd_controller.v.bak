@@ -1,0 +1,113 @@
+module lcd_controller (
+    input clk,           // Clock 50MHz
+    input reset,
+    
+    // Interface com o Usuário (CPU)
+    input [7:0] data_in, // Dado para escrever (ASCII ou Comando)
+    input rs_in,         // 0 = Comando, 1 = Dado (Letra)
+    input start,         // Pulso para iniciar envio
+    output reg done,     // Avisa quando terminou
+    
+    // Interface Física com o LCD (Pinos da FPGA)
+    output [7:0] LCD_DATA,
+    output reg LCD_RS,
+    output LCD_RW,
+    output reg LCD_EN,
+    output LCD_ON,
+    output LCD_BLON
+);
+
+    // Configurações Fixas
+    assign LCD_RW   = 1'b0; // Sempre escrita
+    assign LCD_ON   = 1'b1; // Tela ligada
+    assign LCD_BLON = 1'b1; // Luz de fundo ligada
+    assign LCD_DATA = data_bus;
+
+    // Registradores Internos
+    reg [7:0] data_bus;
+    reg [19:0] contador_delay; // Para contar os milissegundos
+    
+    // Estados da FSM
+    localparam IDLE      = 0;
+    localparam SETUP     = 1; // Prepara os dados nos fios
+    localparam PULSE_HI  = 2; // Sobe o Enable
+    localparam PULSE_LO  = 3; // Desce o Enable (O LCD lê aqui)
+    localparam WAIT_HOLD = 4; // Espera o LCD processar (Delay)
+
+    reg [2:0] estado;
+
+    // Lógica do Timer (Delay)
+    // O LCD é lento! Comandos levam ~40us, Clear leva ~1.64ms.
+    // Vamos usar um delay seguro de 2ms (100.000 ciclos de 50MHz) para tudo por enquanto.
+    // 50.000.000 Hz * 0.002s = 100.000 ticks.
+    localparam DELAY_TIME = 20'd100_000; 
+
+    always @(posedge clk or posedge reset) begin
+        if (reset) begin
+            estado <= IDLE;
+            LCD_EN <= 0;
+            LCD_RS <= 0;
+            done <= 0;
+            data_bus <= 8'h00;
+            contador_delay <= 0;
+        end 
+        else begin
+            case (estado)
+                IDLE: begin
+                    done <= 0;
+                    LCD_EN <= 0;
+                    if (start) begin
+                        // Captura os dados e vai para SETUP
+                        data_bus <= data_in;
+                        LCD_RS   <= rs_in;
+                        estado   <= SETUP;
+                        contador_delay <= 0;
+                    end
+                end
+
+                SETUP: begin
+                    // Garante que RS e Dados estão estáveis antes do Enable
+                    LCD_EN <= 0;
+                    // Pequeno delay de setup (alguns ciclos)
+                    if (contador_delay < 20'd10) begin
+                        contador_delay <= contador_delay + 1'b1;
+                    end else begin
+                        estado <= PULSE_HI;
+                        contador_delay <= 0;
+                    end
+                end
+
+                PULSE_HI: begin
+                    // Levanta o Enable
+                    LCD_EN <= 1;
+                    // Mantém alto por um tempo (> 230ns segundo datasheet)
+                    // 500ns = 25 clocks
+                    if (contador_delay < 20'd25) begin
+                        contador_delay <= contador_delay + 1'b1;
+                    end else begin
+                        estado <= PULSE_LO;
+                        contador_delay <= 0;
+                    end
+                end
+
+                PULSE_LO: begin
+                    // Baixa o Enable (Borda de descida -> LCD captura o dado)
+                    LCD_EN <= 0;
+                    estado <= WAIT_HOLD;
+                    contador_delay <= 0;
+                end
+
+                WAIT_HOLD: begin
+                    // Espera o LCD processar o comando (O "Busy Flag")
+                    if (contador_delay < DELAY_TIME) begin
+                        contador_delay <= contador_delay + 1'b1;
+                    end else begin
+                        done <= 1; // Avisa que terminou
+                        estado <= IDLE;
+                    end
+                end
+            endcase
+        end
+    end
+
+endmodule
